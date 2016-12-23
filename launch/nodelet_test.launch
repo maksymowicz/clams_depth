@@ -1,0 +1,17 @@
+<launch>
+
+    <arg name="tf_prefix" value="robot3" />
+    <arg name="camera" value="camera" />
+
+    <include file="$(find robot_io)/launch/camera.launch">
+        <arg name="tf_prefix" value="$(arg tf_prefix)" />
+        <arg name="camera" value="$(arg camera)" />
+    </include>
+
+    <node pkg="nodelet" type="nodelet" name="clams_depth_nodelet" args="load clams_depth/ClamsDepthNodelet $(arg camera)/$(arg camera)_nodelet_manager">
+        <remap from="image_in" to="depth_registered/image_raw" />
+        <remap from="image_out" to="depth_registered/clams/image_raw" />
+        <param name="model" value="/home/odroid/Documents/RTAB-Map/distortion_model.bin" />
+    </node>
+
+</launch>
