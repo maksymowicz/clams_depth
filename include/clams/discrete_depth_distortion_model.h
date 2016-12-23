@@ -3,10 +3,11 @@
 
 #include <assert.h>
 #include <vector>
+#include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 #include <boost/thread/shared_mutex.hpp>
-#include <eigen_extensions/eigen_extensions.h>
-#include <stream_sequence/typedefs.h>
+//#include <eigen_extensions/eigen_extensions.h>
+//#include <stream_sequence/typedefs.h>
 
 namespace clams
 {
@@ -46,12 +47,10 @@ namespace clams
     DiscreteFrustum(int smoothing = 1, double bin_depth = 1.0);
     //! z value, not distance to origin.
     //! thread-safe.
-    void addExample(double ground_truth, double measurement);
     int index(double z) const;
     void undistort(double* z) const;
     void interpolatedUndistort(double* z) const;
-    void serialize(std::ostream& out, bool& ascii) const;
-    void deserialize(std::istream& in, bool& ascii);
+    void deserialize(std::istream& in, bool ascii);
   
   protected:
     double max_dist_;
@@ -68,27 +67,23 @@ namespace clams
   class DiscreteDepthDistortionModel
   {
   public:
-    typedef boost::shared_ptr<DiscreteDepthDistortionModel> Ptr;
-    typedef boost::shared_ptr<const DiscreteDepthDistortionModel> ConstPtr;
-    DiscreteDepthDistortionModel() {}
-    ~DiscreteDepthDistortionModel();
+    DiscreteDepthDistortionModel() :
+    	width_(0),
+		height_(0),
+		bin_width_(0),
+		bin_height_(0),
+		bin_depth_(0),
+		num_bins_x_(0),
+		num_bins_y_(0),
+		training_samples_(0)
+    {}
+    virtual ~DiscreteDepthDistortionModel();
     DiscreteDepthDistortionModel(int width, int height, int bin_width = 8, int bin_height = 6, double bin_depth = 2.0, int smoothing = 1);
     DiscreteDepthDistortionModel(const DiscreteDepthDistortionModel& other);
     DiscreteDepthDistortionModel& operator=(const DiscreteDepthDistortionModel& other);
     void undistort(cv::Mat & depth) const;
-    void undistort(DepthMat* depth) const;
-    //! Returns the number of training examples it used from this pair.
-    //! Thread-safe.
-    size_t accumulate(const DepthMat& ground_truth, const DepthMat& measurement);
-    void addExample(int v, int u, double ground_truth, double measurement);
-    void save(const std::string& path) const;
     void load(const std::string& path);
-    void serialize(std::ostream& out, bool& ascii) const;
     void deserialize(std::istream& in, bool& ascii);
-    //! Saves images to the directory found at path.
-    //! If path doesn't exist, it will be created.
-    void visualize(const std::string& path) const;
-    std::string status(const std::string& prefix = "") const;
     size_t getTrainingSamples() const {return training_samples_;}
     bool isValid() const
     {

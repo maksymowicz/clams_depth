@@ -1,6 +1,5 @@
 #include <clams/discrete_depth_distortion_model.h>
 #include <eigen_extensions/eigen_extensions.h>
-#include <list>
 
 using namespace std;
 using namespace Eigen;
@@ -17,23 +16,6 @@ namespace clams
     total_numerators_ = VectorXf::Ones(num_bins_) * smoothing;
     total_denominators_ = VectorXf::Ones(num_bins_) * smoothing;
     multipliers_ = VectorXf::Ones(num_bins_);
-  }
-
-  void DiscreteFrustum::addExample(double ground_truth, double measurement)
-  {
-    boost::unique_lock<boost::shared_mutex> ul(shared_mutex_);
-    
-    double mult = ground_truth / measurement;
-    if(mult > MAX_MULT || mult < MIN_MULT)
-      return;
-  
-    int idx = min(num_bins_ - 1, (int)floor(measurement / bin_depth_));
-    assert(idx >= 0);
-
-    total_numerators_(idx) += ground_truth * ground_truth;
-    total_denominators_(idx) += ground_truth * measurement;
-    ++counts_(idx);
-    multipliers_(idx) = total_numerators_(idx) / total_denominators_(idx);
   }
 
   inline int DiscreteFrustum::index(double z) const
@@ -68,31 +50,7 @@ namespace clams
     *z *= mult;
   }
   
-  void DiscreteFrustum::serialize(std::ostream& out, bool& ascii) const
-    {
-	  if(ascii)
-	  {
-		eigen_extensions::serializeScalarASCII(max_dist_, out);
-		eigen_extensions::serializeScalarASCII(num_bins_, out);
-		eigen_extensions::serializeScalarASCII(bin_depth_, out);
-		eigen_extensions::serializeASCII(counts_, out);
-		eigen_extensions::serializeASCII(total_numerators_, out);
-		eigen_extensions::serializeASCII(total_denominators_, out);
-		eigen_extensions::serializeASCII(multipliers_, out);
-	  }
-	  else
-	  {
-		eigen_extensions::serializeScalar(max_dist_, out);
-		eigen_extensions::serializeScalar(num_bins_, out);
-		eigen_extensions::serializeScalar(bin_depth_, out);
-		eigen_extensions::serialize(counts_, out);
-		eigen_extensions::serialize(total_numerators_, out);
-		eigen_extensions::serialize(total_denominators_, out);
-		eigen_extensions::serialize(multipliers_, out);
-	  }
-    }
-
-  void DiscreteFrustum::deserialize(std::istream& in, bool& ascii)
+  void DiscreteFrustum::deserialize(std::istream& in, bool ascii)
     {
     	if(ascii)
     	{
@@ -162,6 +120,7 @@ namespace clams
       for(size_t j = 0; j < frustums_[i].size(); ++j)
         frustums_[i][j] = new DiscreteFrustum(smoothing, bin_depth);
     }
+
     training_samples_ = 0;
   }
 
@@ -214,62 +173,13 @@ namespace clams
     }
   }
 
-  void DiscreteDepthDistortionModel::undistort(DepthMat* depth) const
-  {
-    assert(width_ == depth->cols());
-    assert(height_ ==depth->rows());
-
-    #pragma omp parallel for
-    for(int v = 0; v < height_; ++v) {
-      for(int u = 0; u < width_; ++u) {
-        if(depth->coeffRef(v, u) == 0)
-          continue;
-
-        double z = depth->coeffRef(v, u) * 0.001;
-        frustum(v, u).interpolatedUndistort(&z);
-        depth->coeffRef(v, u) = z * 1000;
-      }
-    }
-  }
-
-  void DiscreteDepthDistortionModel::addExample(int v, int u, double ground_truth, double measurement)
-  {
-    frustum(v, u).addExample(ground_truth, measurement);
-  }
-
-  size_t DiscreteDepthDistortionModel::accumulate(const DepthMat& ground_truth,
-                                                  const DepthMat& measurement)
-  {
-    assert(width_ == ground_truth.cols());
-    assert(height_ == ground_truth.rows());
-    assert(width_ == measurement.cols());
-    assert(height_ == measurement.rows());
-
-    size_t num_training_examples = 0;
-    for(int v = 0; v < height_; ++v) {
-      for(int u = 0; u < width_; ++u) {
-        if(ground_truth.coeffRef(v, u) == 0)
-          continue;
-        if(measurement.coeffRef(v, u) == 0)
-          continue;
-
-        double gt = ground_truth.coeffRef(v, u) * 0.001;
-        double meas = measurement.coeffRef(v, u) * 0.001;
-        frustum(v, u).addExample(gt, meas);
-        ++num_training_examples;
-      }
-    }
-
-    return num_training_examples;
-  }
-
   void DiscreteDepthDistortionModel::load(const std::string& path)
   {
     string file_ext = path.substr(path.find_last_of(".")+1);
     bool ascii = file_ext.compare("txt") == 0;
 
     ifstream f;
-    f.open(path.c_str(), ascii?ios::out: ios::out | ios::binary);
+    f.open(path.c_str(), ascii ? ios::out : ios::out | ios::binary);
     if(!f.is_open()) {
       cerr << "Failed to open " << path << endl;
       assert(f.is_open());
@@ -277,53 +187,6 @@ namespace clams
     deserialize(f, ascii);
     f.close();
   }
-
-  void DiscreteDepthDistortionModel::save(const std::string& path) const
-  {
-    string file_ext = path.substr(path.find_last_of(".")+1);
-    bool ascii = file_ext.compare("txt") == 0;
-
-    ofstream f;
-    f.open(path.c_str(), ascii?ios::out: ios::out | ios::binary);
-    if(!f.is_open()) {
-      cerr << "Failed to open " << path << endl;
-      assert(f.is_open());
-    }
-    serialize(f, ascii);
-    f.close();
-  }
-  
-  void DiscreteDepthDistortionModel::serialize(std::ostream& out, bool& ascii) const
-    {
-      out << "DiscreteDepthDistortionModel v01" << endl;
-      if(ascii)
-      {
-		eigen_extensions::serializeScalarASCII(width_, out);
-		eigen_extensions::serializeScalarASCII(height_, out);
-		eigen_extensions::serializeScalarASCII(bin_width_, out);
-		eigen_extensions::serializeScalarASCII(bin_height_, out);
-		eigen_extensions::serializeScalarASCII(bin_depth_, out);
-		eigen_extensions::serializeScalarASCII(num_bins_x_, out);
-		eigen_extensions::serializeScalarASCII(num_bins_y_, out);
-		eigen_extensions::serializeScalarASCII(training_samples_, out);
-      }
-      else
-      {
-		eigen_extensions::serializeScalar(width_, out);
-		eigen_extensions::serializeScalar(height_, out);
-		eigen_extensions::serializeScalar(bin_width_, out);
-		eigen_extensions::serializeScalar(bin_height_, out);
-		eigen_extensions::serializeScalar(bin_depth_, out);
-		eigen_extensions::serializeScalar(num_bins_x_, out);
-		eigen_extensions::serializeScalar(num_bins_y_, out);
-		eigen_extensions::serializeScalar(training_samples_, out);
-      }
-
-
-      for(int y = 0; y < num_bins_y_; ++y)
-        for(int x = 0; x < num_bins_x_; ++x)
-          frustums_[y][x]->serialize(out, ascii);
-    }
 
   void DiscreteDepthDistortionModel::deserialize(std::istream& in, bool& ascii)
     {
@@ -379,17 +242,6 @@ namespace clams
     int xidx = x / bin_width_;
     int yidx = y / bin_height_;
     return (*frustums_[yidx][xidx]);
-  }
-
-  std::string DiscreteDepthDistortionModel::status(const std::string& prefix) const
-  {
-    ostringstream oss;
-    oss << prefix << "Image width (pixels): " << width_ << endl;
-    oss << prefix << "Image height (pixels): " << height_ << endl;
-    oss << prefix << "Bin width (pixels): " << bin_width_ << endl;
-    oss << prefix << "Bin height (pixels): " << bin_height_ << endl;
-    oss << prefix << "Bin depth (m): " << bin_depth_ << endl;
-    return oss.str();
   }
 
 }  // namespace clams

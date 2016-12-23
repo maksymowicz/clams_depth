@@ -2,13 +2,10 @@
 #define EIGEN_EXTENSIONS_H
 
 #include <Eigen/Eigen>
-//#define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 #include <Eigen/Sparse>
-//#include <boost/filesystem.hpp>
 #include <stdint.h>
 #include <fstream>
 #include <iostream>
-//#include <gzstream/gzstream.h>
 
 namespace eigen_extensions {
 
