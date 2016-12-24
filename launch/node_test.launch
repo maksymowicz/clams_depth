@@ -11,7 +11,7 @@
     <node pkg="clams_depth" type="clams_depth_node" name="clams_depth_node" output="screen" launch-prefix="gdb --args">
         <remap from="image_in" to="depth_registered/image_raw" />
         <remap from="image_out" to="depth_registered/clams/image_raw" />
-        <param name="model" value="/home/odroid/Documents/RTAB-Map/distortion_model.bin" />
+        <param name="model" value="/home/odroid/Documents/RTAB-Map/distortion_model.txt" />
     </node>
 
 </launch>

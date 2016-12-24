@@ -11,7 +11,7 @@ namespace enc = sensor_msgs::image_encodings;
 typedef image_transport::SubscriberStatusCallback itSSCb;
 typedef ros::SubscriberStatusCallback rosSSCb;
 
-ClamsDepth::ClamsDepth(ros::NodeHandle& nh_, ros::NodeHandle& pnh_) : 
+ClamsDepth::ClamsDepth(ros::NodeHandle nh_, ros::NodeHandle pnh_) : 
     nh(nh_), pnh(pnh_), it(nh_)
 {
     lock_guard<mutex> lock(connect_mutex);
@@ -23,10 +23,14 @@ ClamsDepth::ClamsDepth(ros::NodeHandle& nh_, ros::NodeHandle& pnh_) :
     string model_file;
     if (!pnh.getParam("model", model_file))
     {
-        ROS_FATAL("ClamsDepth: Please provide the full path and file name of the discrete"
-                " distortion model created using CLAMS.");
+        ROS_FATAL("ClamsDepth: Please provide the full path and file name "
+                "of the discrete distortion model created using CLAMS.");
         exit(EXIT_FAILURE);
     }
+    if (clams::fileExtension(model_file).compare("txt") != 0)
+        ROS_WARN("ClamsDepth: discrete distortion models saved in formats "
+                "other than ASCII (*.txt) are not very portable. Attempting "
+                "to open anyway...");
 
     model.load(model_file);
     if (!model.isValid())
@@ -47,9 +51,9 @@ void ClamsDepth::connectCb()
     lock_guard<mutex> lock(connect_mutex);
     if (!depth_sub && depth_pub.getNumSubscribers() > 0)
     {
-        ROS_DEBUG("Connecting to depth topic.");
+        ROS_INFO("ClamsDepth: Connecting to depth topic.");
         image_transport::TransportHints h("raw", ros::TransportHints(), pnh);
-        depth_sub = it.subscribeCamera("image_in", 10, &ClamsDepth::depthCb, 
+        depth_sub = it.subscribeCamera("depth_in", 10, &ClamsDepth::depthCb, 
                 this, h);
     }
 }
@@ -59,7 +63,7 @@ void ClamsDepth::disconnectCb()
     lock_guard<mutex> lock(connect_mutex);
     if (depth_pub.getNumSubscribers() == 0)
     {
-        ROS_DEBUG("Unsubscribing from depth topic.");
+        ROS_INFO("ClamsDepth: Unsubscribing from depth topic.");
         depth_sub.shutdown();
     }
 }

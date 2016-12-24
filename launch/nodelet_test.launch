@@ -3,15 +3,47 @@
     <arg name="tf_prefix" value="robot3" />
     <arg name="camera" value="camera" />
 
-    <include file="$(find robot_io)/launch/camera.launch">
-        <arg name="tf_prefix" value="$(arg tf_prefix)" />
-        <arg name="camera" value="$(arg camera)" />
-    </include>
+    <group ns="$(arg tf_prefix)">
+        <include file="$(find robot_io)/launch/robot.launch">
+            <arg name="tf_prefix" value="$(arg tf_prefix)" />
+            <arg name="camera" value="$(arg camera)" />
+            <arg name="load_camera" value="true" />
+        </include>
 
-    <node pkg="nodelet" type="nodelet" name="clams_depth_nodelet" args="load clams_depth/ClamsDepthNodelet $(arg camera)/$(arg camera)_nodelet_manager">
-        <remap from="image_in" to="depth_registered/image_raw" />
-        <remap from="image_out" to="depth_registered/clams/image_raw" />
-        <param name="model" value="/home/odroid/Documents/RTAB-Map/distortion_model.bin" />
-    </node>
+        <node pkg="nodelet" type="nodelet" name="clams_depth_nodelet" 
+            args="load clams_depth/ClamsDepthNodelet $(arg camera)/$(arg camera)_nodelet_manager" 
+            output="screen">
+            <remap from="depth_in" to="$(arg camera)/depth_registered/image_raw" />
+            <remap from="depth_out" to="$(arg camera)/depth_registered/clams/image_raw" />
+            <param name="model" value="/home/odroid/Documents/RTAB-Map/distortion_model.txt" />
+        </node>
+
+        <arg name="nodelet_args" value="load depthimage_to_laserscan/DepthImageToLaserScanNodelet 
+            $(arg camera)/$(arg camera)_nodelet_manager" />
+
+        <node pkg="nodelet" type="nodelet" name="fake_laser_nodelet" args="$(arg nodelet_args)" 
+            output="screen">
+            <remap from="scan"              to="$(arg camera)_scan" />
+            <remap from="image"             to="$(arg camera)/depth_registered/image_raw" />
+            <remap from="camera_info"       to="$(arg camera)/depth_registered/camera_info" />
+            <param name="range_max"         value="4.0" />
+            <param name="scan_height"       value="4.0" />
+            <param name="output_frame_id"   value="$(arg tf_prefix)/base_link" />
+            <param name="camera_frame_id"   value="$(arg tf_prefix)/$(arg camera)_rgb_frame" />
+            <param name="ground_frame_id"   value="$(arg tf_prefix)/base_link" />
+        </node>
+
+        <node pkg="nodelet" type="nodelet" name="clams_fake_laser_nodelet" 
+            args="$(arg nodelet_args)" output="screen">
+            <remap from="scan"              to="clams_scan" />
+            <remap from="image"             to="$(arg camera)/depth_registered/clams/image_raw" />
+            <remap from="camera_info"       to="$(arg camera)/depth_registered/clams/camera_info" />
+            <param name="range_max"         value="4.0" />
+            <param name="scan_height"       value="4.0" />
+            <param name="output_frame_id"   value="$(arg tf_prefix)/base_link" />
+            <param name="camera_frame_id"   value="$(arg tf_prefix)/$(arg camera)_rgb_frame" />
+            <param name="ground_frame_id"   value="$(arg tf_prefix)/base_link" />
+        </node>
+    </group>
 
 </launch>

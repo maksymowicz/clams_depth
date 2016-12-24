@@ -10,7 +10,7 @@
 class ClamsDepth
 {
     public:
-        ClamsDepth(ros::NodeHandle&, ros::NodeHandle&);
+        ClamsDepth(ros::NodeHandle, ros::NodeHandle);
         ~ClamsDepth();
 
     private:

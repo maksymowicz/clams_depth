@@ -114,6 +114,8 @@ namespace clams
     const DiscreteFrustum& frustum(int y, int x) const;
   };
 
+  std::string fileExtension(const std::string& path);
+
 }  // namespace clams
 
 #endif // DISCRETE_DEPTH_DISTORTION_MODEL_H

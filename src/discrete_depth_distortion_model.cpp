@@ -173,9 +173,14 @@ namespace clams
     }
   }
 
+  string fileExtension(const string& path)
+  {
+    return path.substr(path.find_last_of(".")+1);
+  }
+
   void DiscreteDepthDistortionModel::load(const std::string& path)
   {
-    string file_ext = path.substr(path.find_last_of(".")+1);
+    string file_ext = fileExtension(path);
     bool ascii = file_ext.compare("txt") == 0;
 
     ifstream f;
