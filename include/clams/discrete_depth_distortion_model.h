@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <sensor_msgs/Image.h>
 
 namespace clams
 {
@@ -79,7 +80,7 @@ namespace clams
     DiscreteDepthDistortionModel(int width, int height, int bin_width = 8, int bin_height = 6, double bin_depth = 2.0, int smoothing = 1);
     DiscreteDepthDistortionModel(const DiscreteDepthDistortionModel& other);
     DiscreteDepthDistortionModel& operator=(const DiscreteDepthDistortionModel& other);
-    void undistort(cv::Mat & depth) const;
+    void undistort(sensor_msgs::Image::Ptr& depth) const;
     void load(const std::string& path);
     void deserialize(std::istream& in, bool& ascii);
     size_t getTrainingSamples() const {return training_samples_;}

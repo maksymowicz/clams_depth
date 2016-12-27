@@ -1,12 +1,10 @@
 #include <clams_depth/clams_depth.h>
-#include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 
 #include <string>
 #include <stdlib.h>
 
 using namespace std;
-namespace enc = sensor_msgs::image_encodings;
 
 typedef image_transport::SubscriberStatusCallback itSSCb;
 typedef ros::SubscriberStatusCallback rosSSCb;
@@ -18,7 +16,7 @@ ClamsDepth::ClamsDepth(ros::NodeHandle nh_, ros::NodeHandle pnh_) :
 
     itSSCb itssc = bind(&ClamsDepth::connectCb, this);
     rosSSCb rssc = bind(&ClamsDepth::connectCb, this);
-    depth_pub = it.advertiseCamera("depth_out", 10, itssc, itssc, rssc, rssc);
+    depth_pub = it.advertiseCamera("depth_out", 1, itssc, itssc, rssc, rssc);
 
     string model_file;
     if (!pnh.getParam("model", model_file))
@@ -53,7 +51,7 @@ void ClamsDepth::connectCb()
     {
         ROS_INFO("ClamsDepth: Connecting to depth topic.");
         image_transport::TransportHints h("raw", ros::TransportHints(), pnh);
-        depth_sub = it.subscribeCamera("depth_in", 10, &ClamsDepth::depthCb, 
+        depth_sub = it.subscribeCamera("depth_in", 1, &ClamsDepth::depthCb, 
                 this, h);
     }
 }
@@ -74,17 +72,8 @@ void ClamsDepth::depthCb(const sensor_msgs::ImageConstPtr& img,
     static sensor_msgs::CameraInfoPtr info(new sensor_msgs::CameraInfo(*ci));
     info->header.stamp = ci->header.stamp;
 
-    cv_bridge::CvImagePtr cv_ptr;
-    try
-    {
-        cv_ptr = cv_bridge::toCvCopy(img);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
+    sensor_msgs::Image::Ptr depth(new sensor_msgs::Image(*img));
 
-    model.undistort(cv_ptr->image);
-    depth_pub.publish(cv_ptr->toImageMsg(), info);
+    model.undistort(depth);
+    depth_pub.publish(depth, info);
 }

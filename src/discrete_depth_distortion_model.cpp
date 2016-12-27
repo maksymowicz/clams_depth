@@ -1,8 +1,11 @@
 #include <clams/discrete_depth_distortion_model.h>
 #include <eigen_extensions/eigen_extensions.h>
+#include <sensor_msgs/image_encodings.h>
 
 using namespace std;
 using namespace Eigen;
+
+namespace enc = sensor_msgs::image_encodings;
 
 namespace clams
 {
@@ -138,37 +141,45 @@ namespace clams
     deleteFrustums();
   }
 
-  void DiscreteDepthDistortionModel::undistort(cv::Mat & depth) const
+  void DiscreteDepthDistortionModel::undistort(sensor_msgs::Image::Ptr& depth) 
+      const
   {
-    assert(width_ == depth.cols);
-    assert(height_ ==depth.rows);
-    assert(depth.type() == CV_16UC1 || depth.type() == CV_32FC1);
-    if(depth.type() == CV_32FC1)
+    assert(width_ == depth->width);
+    assert(height_ == depth->height);
+    string encoding = depth->encoding;
+    assert(encoding == enc::TYPE_16UC1 || encoding == enc::TYPE_32FC1);
+    if (encoding == enc::TYPE_32FC1)
     {
 		#pragma omp parallel for
-		for(int v = 0; v < height_; ++v) {
-		  for(int u = 0; u < width_; ++u) {
-			 float & z = depth.at<float>(v, u);
-			if(std::isnan(z) || z == 0.0f)
-			  continue;
-			double zf = z;
-			frustum(v, u).interpolatedUndistort(&zf);
-			z = zf;
-		  }
+		for (int v = 0; v < height_; ++v)
+        {
+		    for (int u = 0; u < width_; ++u)
+            {
+                int index = v*depth->step + u*(depth->step/depth->width);
+                float& z = reinterpret_cast<float&>(depth->data[index]);
+			    if(std::isnan(z) || z == 0.0f)
+                    continue;
+			    double zf = z;
+			    frustum(v, u).interpolatedUndistort(&zf);
+			    z = zf;
+		    }
 		}
     }
     else
     {
 		#pragma omp parallel for
-		for(int v = 0; v < height_; ++v) {
-		  for(int u = 0; u < width_; ++u) {
-		    unsigned short & z = depth.at<unsigned short>(v, u);
-			if(std::isnan(z) || z == 0)
-			  continue;
-			double zf = z * 0.001;
-			frustum(v, u).interpolatedUndistort(&zf);
-			z = zf*1000;
-		  }
+		for (int v = 0; v < height_; ++v)
+        {
+		    for(int u = 0; u < width_; ++u)
+            {
+                int index = v*depth->step + u*(depth->step/depth->width);
+                uint16_t& z = reinterpret_cast<uint16_t&>(depth->data[index]);
+                if(std::isnan(z) || z == 0)
+                    continue;
+                double zf = z * 0.001;
+                frustum(v, u).interpolatedUndistort(&zf);
+                z = zf*1000;
+		    }
 		}
     }
   }
