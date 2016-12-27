@@ -6,8 +6,6 @@
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 #include <boost/thread/shared_mutex.hpp>
-//#include <eigen_extensions/eigen_extensions.h>
-//#include <stream_sequence/typedefs.h>
 
 namespace clams
 {
