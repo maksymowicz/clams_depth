@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(clams_depth)
+project(clams_ros)
 
 set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 set(CMAKE_BUILD_TYPE Debug)
 
 find_package(catkin REQUIRED COMPONENTS
-    cv_bridge
     image_transport
     nodelet
     roscpp

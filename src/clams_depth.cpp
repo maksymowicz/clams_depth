@@ -1,4 +1,4 @@
-#include <clams_depth/clams_depth.h>
+#include <clams_ros/clams_depth.h>
 #include <sensor_msgs/image_encodings.h>
 
 #include <string>

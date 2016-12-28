@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include <clams_depth/clams_depth.h>
+#include <clams_ros/clams_depth.h>
 
 int main(int argc, char** argv)
 {

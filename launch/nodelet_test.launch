@@ -11,7 +11,7 @@
         </include>
 
         <node pkg="nodelet" type="nodelet" name="clams_depth_nodelet" 
-            args="load clams_depth/ClamsDepthNodelet $(arg camera)/$(arg camera)_nodelet_manager" 
+            args="load clams_ros/ClamsDepthNodelet $(arg camera)/$(arg camera)_nodelet_manager" 
             output="screen">
             <remap from="depth_in" to="$(arg camera)/depth_registered/image_raw" />
             <remap from="depth_out" to="$(arg camera)/depth_registered/clams/image_raw" />

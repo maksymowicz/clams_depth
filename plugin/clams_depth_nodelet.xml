@@ -1,6 +1,6 @@
 <library path="lib/libclams_depth_nodelet">
 
-    <class name="clams_depth/ClamsDepthNodelet" type="ClamsDepthNodelet" 
+    <class name="clams_ros/ClamsDepthNodelet" type="ClamsDepthNodelet" 
         base_class_type="nodelet::Nodelet">
         <description>
             A nodelet for undistorting depth images 

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>clams_depth</name>
+  <name>clams_ros</name>
   <version>0.0.0</version>
-  <description>The clams_depth package</description>
+  <description>The clams_ros package</description>
   <maintainer email="odroid@todo.todo">odroid</maintainer>
 
   <license>TODO</license>
