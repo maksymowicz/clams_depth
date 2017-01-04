@@ -4,6 +4,7 @@
 
 using namespace std;
 using namespace Eigen;
+using namespace sensor_msgs;
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -141,8 +142,26 @@ namespace clams
     deleteFrustums();
   }
 
-  void DiscreteDepthDistortionModel::undistort(sensor_msgs::Image::Ptr& depth) 
+  void DiscreteDepthDistortionModel::undistort(LaserScan::Ptr& scan, int v) 
       const
+  {
+      assert(width_ == scan->ranges.size());
+      assert(height_ > v && v >= 0);
+
+      #pragma omp parallel for
+      for (int u = 0; u < width_; ++u)
+      {
+          float& z = scan->ranges[u];
+          if (std::isnan(z) || z == 0.0f)
+              continue;
+          
+          double zd = z;
+          frustum(v, u).interpolatedUndistort(&zd);
+          z = zd;
+      }
+  }
+
+  void DiscreteDepthDistortionModel::undistort(Image::Ptr& depth) const
   {
     assert(width_ == depth->width);
     assert(height_ == depth->height);

@@ -22,8 +22,8 @@ find_package(OpenCV REQUIRED)
 
 
 catkin_package(
-    INCLUDE_DIRS include
-    LIBRARIES clams_depth_nodelet
+    INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
+    LIBRARIES clams_ros clams_depth_nodelet
     CATKIN_DEPENDS image_transport nodelet roscpp sensor_msgs
     DEPENDS Boost OpenMP Eigen3 OpenCV
 )
@@ -37,6 +37,9 @@ include_directories(
 add_library(clams_depth_nodelet src/clams_depth_nodelet.cpp src/clams_depth.cpp
     src/discrete_depth_distortion_model.cpp)
 target_link_libraries(clams_depth_nodelet ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
+add_library(clams_ros src/discrete_depth_distortion_model.cpp)
+target_link_libraries(clams_ros ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 add_executable(clams_depth_node src/clams_depth_node.cpp src/clams_depth.cpp
     src/discrete_depth_distortion_model.cpp)
